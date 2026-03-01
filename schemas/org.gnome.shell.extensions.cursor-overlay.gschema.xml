@@ -10,95 +10,29 @@
   <schema id='org.gnome.shell.extensions.cursor-overlay'
     path='/org/gnome/shell/extensions/cursor-overlay/'>
 
-    <!-- Mode -->
-
     <key name='overlay-mode' enum='org.gnome.shell.extensions.cursor-overlay.overlay-mode'>
       <default>'circle'</default>
-      <summary>Overlay mode</summary>
-      <description>Circle ring, tinted cursor, or custom image overlay.</description>
     </key>
 
-    <!-- Circle mode settings -->
+    <key name='circle-radius' type='i'><default>16</default></key>
+    <key name='circle-stroke-width' type='i'><default>2</default></key>
+    <key name='circle-color' type='s'><default>'#000000'</default></key>
+    <key name='circle-opacity' type='i'><default>85</default></key>
 
-    <key name='circle-radius' type='i'>
-      <default>16</default>
-      <summary>Circle radius</summary>
-      <description>Radius of the circle overlay in pixels.</description>
-    </key>
+    <key name='cursor-size' type='i'><default>48</default></key>
+    <key name='cursor-color' type='s'><default>'#ff0000'</default></key>
+    <key name='cursor-opacity' type='i'><default>80</default></key>
 
-    <key name='circle-stroke-width' type='i'>
-      <default>2</default>
-      <summary>Circle stroke width</summary>
-      <description>Width of the circle outline in pixels.</description>
-    </key>
+    <key name='image-path' type='s'><default>''</default></key>
+    <key name='image-size' type='i'><default>48</default></key>
+    <key name='image-opacity' type='i'><default>80</default></key>
 
-    <key name='circle-color' type='s'>
-      <default>'#000000'</default>
-      <summary>Circle color</summary>
-      <description>Color of the circle overlay.</description>
-    </key>
+    <key name='disable-new-monitors' type='b'><default>true</default></key>
+    <key name='enable-meta-monitors' type='b'><default>true</default></key>
+    <key name='enabled-monitors' type='as'><default>[]</default></key>
+    <key name='disabled-monitors' type='as'><default>[]</default></key>
 
-    <key name='circle-opacity' type='i'>
-      <default>85</default>
-      <summary>Circle opacity</summary>
-      <description>Opacity of the circle overlay (0-100).</description>
-    </key>
-
-    <!-- Cursor mode settings -->
-
-    <key name='cursor-size' type='i'>
-      <default>48</default>
-      <summary>Cursor overlay size</summary>
-      <description>Size of the cursor overlay in pixels.</description>
-    </key>
-
-    <key name='cursor-color' type='s'>
-      <default>'#ff0000'</default>
-      <summary>Cursor overlay color</summary>
-      <description>Tint color for the cursor overlay.</description>
-    </key>
-
-    <key name='cursor-opacity' type='i'>
-      <default>80</default>
-      <summary>Cursor overlay opacity</summary>
-      <description>Opacity of the cursor overlay (0-100).</description>
-    </key>
-
-    <!-- Image mode settings -->
-
-    <key name='image-path' type='s'>
-      <default>''</default>
-      <summary>Custom image path</summary>
-      <description>Path to a custom image file (PNG, BMP, SVG, etc.) to use as overlay.</description>
-    </key>
-
-    <key name='image-size' type='i'>
-      <default>48</default>
-      <summary>Custom image size</summary>
-      <description>Display size of the custom image overlay in pixels.</description>
-    </key>
-
-    <key name='image-opacity' type='i'>
-      <default>80</default>
-      <summary>Custom image opacity</summary>
-      <description>Opacity of the custom image overlay (0-100).</description>
-    </key>
-
-    <!-- Per-monitor settings -->
-
-    <key name='disabled-monitors' type='as'>
-      <default>[]</default>
-      <summary>Disabled monitors</summary>
-      <description>List of monitor connector names where the overlay is hidden.</description>
-    </key>
-
-    <!-- Fallback polling (used only if cursor tracker signal unavailable) -->
-
-    <key name='poll-rate' type='i'>
-      <default>120</default>
-      <summary>Poll rate</summary>
-      <description>Fallback cursor position polling rate in Hz.</description>
-    </key>
+    <key name='poll-rate' type='i'><default>120</default></key>
 
   </schema>
 </schemalist>

@@ -31,9 +31,7 @@ export default class CursorOverlayExtension extends Extension {
         this._timerId = null;
         this._monitorChangedId = null;
         this._connectorMap = new Map();
-        this._disabledSet = new Set(this._settings.get_strv('disabled-monitors'));
-        this._lastMonitorIdx = -1;
-        this._lastMonitorDisabled = false;
+        this._updateMonitorPolicy();
 
         this._buildMonitorMap();
         this._setupOverlay();
@@ -42,9 +40,7 @@ export default class CursorOverlayExtension extends Extension {
         this._settingsChangedId = this._settings.connect('changed', () => {
             this._stopTracking();
             this._teardownOverlay();
-            this._disabledSet = new Set(this._settings.get_strv('disabled-monitors'));
-            this._lastMonitorIdx = -1;
-            this._lastMonitorDisabled = false;
+            this._updateMonitorPolicy();
             this._setupOverlay();
             this._startTracking();
         });
@@ -73,6 +69,7 @@ export default class CursorOverlayExtension extends Extension {
         this._teardownOverlay();
         this._settings = null;
         this._connectorMap = null;
+        this._enabledSet = null;
         this._disabledSet = null;
     }
 
@@ -99,17 +96,59 @@ export default class CursorOverlayExtension extends Extension {
         this._lastY = null;
     }
 
+    _updateMonitorPolicy() {
+        this._enabledSet = new Set(this._settings.get_strv('enabled-monitors'));
+        this._disabledSet = new Set(this._settings.get_strv('disabled-monitors'));
+        this._disableNew = this._settings.get_boolean('disable-new-monitors');
+        this._enableMeta = this._settings.get_boolean('enable-meta-monitors');
+        this._lastMonitorIdx = -1;
+        this._lastMonitorDisabled = false;
+        this._needsMonitorCheck = this._disabledSet.size > 0
+            || this._enabledSet.size > 0
+            || this._disableNew;
+        if (this._connectorMap?.size > 0)
+            this._rebuildDisabledCache();
+    }
+
     _buildMonitorMap() {
         this._connectorMap = new Map();
+        this._metaSet = new Set();
         try {
             const mm = global.backend.get_monitor_manager();
             for (const monitor of mm.get_monitors()) {
                 const connector = monitor.get_connector();
                 const idx = mm.get_monitor_for_connector(connector);
-                if (idx >= 0)
-                    this._connectorMap.set(idx, connector);
+                if (idx < 0) continue;
+                this._connectorMap.set(idx, connector);
+                try {
+                    const vendor = monitor.get_vendor();
+                    const name = monitor.get_display_name();
+                    if ((vendor && vendor.includes('Meta'))
+                        || (name && name.includes('Meta'))
+                        || (connector && connector.includes('Meta')))
+                        this._metaSet.add(connector);
+                } catch { /* no vendor/name API */ }
             }
         } catch { /* unavailable */ }
+        this._rebuildDisabledCache();
+    }
+
+    _rebuildDisabledCache() {
+        this._disabledCache = new Map();
+        for (const [idx, connector] of this._connectorMap) {
+            let disabled;
+            if (this._enabledSet.has(connector))
+                disabled = false;
+            else if (this._disabledSet.has(connector))
+                disabled = true;
+            else if (!this._disableNew)
+                disabled = false;
+            else if (this._enableMeta && this._metaSet.has(connector))
+                disabled = false;
+            else
+                disabled = true;
+            this._disabledCache.set(idx, disabled);
+        }
     }
 
     _startTracking() {
@@ -148,12 +187,11 @@ export default class CursorOverlayExtension extends Extension {
 
         const [mx, my] = global.get_pointer();
 
-        if (this._disabledSet.size > 0 && this._connectorMap.size > 0) {
+        if (this._needsMonitorCheck && this._disabledCache?.size > 0) {
             const monIdx = global.display.get_current_monitor();
             if (monIdx !== this._lastMonitorIdx) {
                 this._lastMonitorIdx = monIdx;
-                const connector = this._connectorMap.get(monIdx);
-                this._lastMonitorDisabled = connector != null && this._disabledSet.has(connector);
+                this._lastMonitorDisabled = this._disabledCache.get(monIdx) ?? this._disableNew;
             }
             if (this._lastMonitorDisabled) {
                 this._overlay.hide();

@@ -164,19 +164,50 @@ const OverlayPage = GObject.registerClass(
             const monitorGroup = new Adw.PreferencesGroup({title: 'Per-Monitor'});
             this.add(monitorGroup);
 
+            const disableNewRow = new Adw.SwitchRow({
+                title: 'Do not enable on new monitors',
+                active: settings.get_boolean('disable-new-monitors'),
+            });
+            disableNewRow.connect('notify::active', w => {
+                settings.set_boolean('disable-new-monitors', w.active);
+                metaRow.sensitive = w.active;
+            });
+            monitorGroup.add(disableNewRow);
+
+            const metaRow = new Adw.SwitchRow({
+                title: 'Enable on Meta monitors',
+                subtitle: 'Auto-enable on virtual monitors',
+                active: settings.get_boolean('enable-meta-monitors'),
+                sensitive: settings.get_boolean('disable-new-monitors'),
+            });
+            metaRow.connect('notify::active', w => {
+                settings.set_boolean('enable-meta-monitors', w.active);
+            });
+            monitorGroup.add(metaRow);
+
             const monitorList = Gdk.Display.get_default().get_monitors();
             const nMonitors = monitorList.get_n_items();
+            const enabledMonitors = settings.get_strv('enabled-monitors');
             const disabledMonitors = settings.get_strv('disabled-monitors');
+            const disableNew = settings.get_boolean('disable-new-monitors');
+            const enableMeta = settings.get_boolean('enable-meta-monitors');
 
             for (let i = 0; i < nMonitors; i++) {
                 const monitor = monitorList.get_item(i);
                 const connector = monitor.get_connector();
                 const geom = monitor.get_geometry();
 
-                const toggle = new Gtk.Switch({
-                    active: !disabledMonitors.includes(connector),
-                    valign: Gtk.Align.CENTER,
-                });
+                let active;
+                if (enabledMonitors.includes(connector))
+                    active = true;
+                else if (disabledMonitors.includes(connector))
+                    active = false;
+                else if (!disableNew)
+                    active = true;
+                else
+                    active = enableMeta;
+
+                const toggle = new Gtk.Switch({active, valign: Gtk.Align.CENTER});
 
                 const row = new Adw.ActionRow({
                     title: connector || `Monitor ${i + 1}`,
@@ -186,13 +217,18 @@ const OverlayPage = GObject.registerClass(
                 row.set_activatable_widget(toggle);
 
                 toggle.connect('notify::active', widget => {
-                    const current = settings.get_strv('disabled-monitors');
+                    const en = settings.get_strv('enabled-monitors');
+                    const dis = settings.get_strv('disabled-monitors');
                     if (widget.active) {
+                        settings.set_strv('enabled-monitors',
+                            en.includes(connector) ? en : [...en, connector]);
                         settings.set_strv('disabled-monitors',
-                            current.filter(c => c !== connector));
+                            dis.filter(c => c !== connector));
                     } else {
-                        if (!current.includes(connector))
-                            settings.set_strv('disabled-monitors', [...current, connector]);
+                        settings.set_strv('disabled-monitors',
+                            dis.includes(connector) ? dis : [...dis, connector]);
+                        settings.set_strv('enabled-monitors',
+                            en.filter(c => c !== connector));
                     }
                 });
 
