@@ -1,0 +1,8 @@
+{
+    "name": "Cursor Overlay",
+    "description": "Draws a visible overlay on the cursor",
+    "uuid": "cursor-overlay@local",
+    "shell-version": ["49", "50"],
+    "settings-schema": "org.gnome.shell.extensions.cursor-overlay",
+    "url": ""
+}
